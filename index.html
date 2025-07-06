@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>FOX Photo Frame Clock & Calendar</title>
+
+    
+
+    <!-- Tailwind CSS for styling -->
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    
+
+    <!-- Google Fonts for a clean look -->
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+
+
+    <style>
+
+        /* Custom styles for smooth transitions and layout */
+
+        body {
+
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+
+            -webkit-font-smoothing: antialiased;
+
+            -moz-osx-font-smoothing: grayscale;
+
+        }
+
+
+
+        #slideshow-container {
+
+            position: fixed;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            z-index: -1;
+
+        }
+
+
+
+        .slide {
+
+            position: absolute;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            background-size: cover;
+
+            background-position: center;
+
+            background-repeat: no-repeat;
+
+            opacity: 0;
+
+            transition: opacity 1.5s ease-in-out;
+
+            z-index: 1;
+
+        }
+
+
+
+        .slide.active {
+
+            opacity: 1;
+
+            z-index: 2;
+
+        }
+
+        
+
+        /* Glassmorphism effect for the main content */
+
+        .glass-panel {
+
+            background: rgba(0, 0, 0, 0.3);
+
+            backdrop-filter: blur(10px);
+
+            -webkit-backdrop-filter: blur(10px);
+
+            border: 1px solid rgba(255, 255, 255, 0.1);
+
+        }
+
+    </style>
+
+</head>
+
+<body class="bg-black text-white overflow-hidden">
+
+
+
+    <!-- Slideshow Background -->
+
+    <div id="slideshow-container">
+
+        <div id="slide1" class="slide"></div>
+
+        <div id="slide2" class="slide"></div>
+
+    </div>
+
+
+
+    <!-- Main Content: Clock and Calendar (Bottom Left) -->
+
+    <div class="min-h-screen flex items-end justify-start p-4 md:p-6">
+
+        <div class="glass-panel rounded-2xl p-4 md:p-6 shadow-2xl text-left">
+
+            <div id="clock" class="text-4xl md:text-5xl font-bold tracking-tight"></div>
+
+            <div id="calendar-container" class="w-full mt-3">
+
+                <!-- Calendar will be generated and injected here by JavaScript -->
+
+            </div>
+
+            <div id="error-message" class="text-xs text-red-400 mt-2 h-4"></div>
+
+        </div>
+
+    </div>
+
+
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- DOM Element References ---
+
+            const clockElement = document.getElementById('clock');
+
+            const calendarContainer = document.getElementById('calendar-container');
+
+            const errorMessageElement = document.getElementById('error-message');
+
+            const slideElements = [document.getElementById('slide1'), document.getElementById('slide2')];
+
+            
+
+            // --- Default Image URLs ---
+
+            const defaultImageUrls = [
+
+                'https://images.unsplash.com/photo-1474511320723-9a56873867b5?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+
+                'https://images.unsplash.com/photo-1480472684115-4966367dde1d?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+
+                'https://images.unsplash.com/photo-1551725301-5183dc1dbb83?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+
+                'https://images.unsplash.com/photo-1506657047594-19a6c6a72bd0?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+
+                'https://images.unsplash.com/photo-1639269589043-a2ad517e238e?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+
+                'https://images.unsplash.com/photo-1569449047196-cebeecbc6b6b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+
+                'https://images.unsplash.com/photo-1442522772768-9032b6d10e3e?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+
+                'https://images.unsplash.com/photo-1528652899333-492965af4854?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+
+                'https://images.unsplash.com/photo-1634642386022-566a2d3bdb41?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+
+                'https://images.unsplash.com/photo-1506777260371-08a6f46ac02d?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+
+            ];
+
+
+
+            // --- State Variables ---
+
+            let imageUrls = [];
+
+            let currentImageIndex = -1;
+
+            let currentSlideElementIndex = 0;
+
+            let lastUpdatedDay = -1;
+
+            let clockInterval;
+
+            let slideshowInterval;
+
+            const SLIDESHOW_DURATION = 10000;
+
+
+
+            // --- Core Functions ---
+
+
+
+            function updateClock() {
+
+                const now = new Date();
+
+                const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+
+                clockElement.textContent = new Intl.DateTimeFormat('ja-JP-u-hc-h23', timeOptions).format(now);
+
+            }
+
+            
+
+            function updateCalendar() {
+
+                const now = new Date();
+
+                const year = now.getFullYear();
+
+                const month = now.getMonth();
+
+                const today = now.getDate();
+
+                const firstDayOfMonth = new Date(year, month, 1);
+
+                const lastDayOfMonth = new Date(year, month + 1, 0);
+
+                const daysInMonth = lastDayOfMonth.getDate();
+
+                const startDayOfWeek = firstDayOfMonth.getDay();
+
+
+
+                const monthFormatter = new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: 'long' });
+
+                let html = `<h2 class="text-lg font-bold mb-2">${monthFormatter.format(now)}</h2>`;
+
+                html += `<div class="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-1">`;
+
+                ['日', '月', '火', '水', '木', '金', '土'].forEach(day => { html += `<div>${day}</div>`; });
+
+                html += `</div><div class="grid grid-cols-7 gap-y-1 text-center text-xs font-light">`;
+
+                for (let i = 0; i < startDayOfWeek; i++) { html += `<div></div>`; }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+
+                    const isToday = (day === today);
+
+                    const cellClasses = isToday 
+
+                        ? 'bg-blue-500/80 text-white font-bold rounded-full w-7 h-7 flex items-center justify-center mx-auto'
+
+                        : 'w-7 h-7 flex items-center justify-center mx-auto';
+
+                    html += `<div class="${cellClasses}">${day}</div>`;
+
+                }
+
+                html += `</div>`;
+
+                calendarContainer.innerHTML = html;
+
+                lastUpdatedDay = today;
+
+            }
+
+
+
+            function checkDateChange() {
+
+                const now = new Date();
+
+                if (now.getDate() !== lastUpdatedDay) {
+
+                    updateCalendar();
+
+                }
+
+            }
+
+
+
+            function showErrorMessage(message) {
+
+                errorMessageElement.textContent = message;
+
+                setTimeout(() => {
+
+                    if (errorMessageElement.textContent === message) {
+
+                        errorMessageElement.textContent = '';
+
+                    }
+
+                }, 4000);
+
+            }
+
+
+
+            function loadImageUrls() {
+
+                imageUrls = [...defaultImageUrls];
+
+            }
+
+
+
+            function preloadImage(url) {
+
+                return new Promise((resolve, reject) => {
+
+                    if (!url || typeof url !== 'string') {
+
+                        return reject(new Error('無効なURLです。'));
+
+                    }
+
+                    const img = new Image();
+
+                    img.crossOrigin = 'Anonymous';
+
+                    img.src = url;
+
+                    img.onload = () => resolve(img);
+
+                    img.onerror = () => reject(new Error(`画像の読み込みに失敗: ${url.substring(0, 50)}...`));
+
+                });
+
+            }
+
+
+
+            async function changeSlide(retryCount = 0) {
+
+                if (slideshowInterval) clearInterval(slideshowInterval);
+
+
+
+                if (imageUrls.length === 0) {
+
+                    errorMessageElement.textContent = '表示できる画像がありません。';
+
+                    return;
+
+                }
+
+                
+
+                if (retryCount >= imageUrls.length) {
+
+                    errorMessageElement.textContent = '全ての画像の読込に失敗しました。';
+
+                    return;
+
+                }
+
+
+
+                currentImageIndex = (currentImageIndex + 1) % imageUrls.length;
+
+                const nextImageUrl = imageUrls[currentImageIndex];
+
+                
+
+                try {
+
+                    await preloadImage(nextImageUrl);
+
+                    const currentSlide = slideElements[currentSlideElementIndex];
+
+                    const nextSlide = slideElements[(currentSlideElementIndex + 1) % 2];
+
+                    
+
+                    nextSlide.style.backgroundImage = `url('${nextImageUrl}')`;
+
+                    currentSlide.classList.remove('active');
+
+                    nextSlide.classList.add('active');
+
+                    currentSlideElementIndex = (currentSlideElementIndex + 1) % 2;
+
+
+
+                    slideshowInterval = setInterval(() => changeSlide(), SLIDESHOW_DURATION);
+
+                } catch (error) {
+
+                    console.error(error.message);
+
+                    showErrorMessage('画像の読み込みに失敗。次を試します。');
+
+                    setTimeout(() => changeSlide(retryCount + 1), 100);
+
+                }
+
+            }
+
+            
+
+            function startApp() {
+
+                if (clockInterval) clearInterval(clockInterval);
+
+                if (slideshowInterval) clearInterval(slideshowInterval);
+
+
+
+                updateClock();
+
+                checkDateChange();
+
+                loadImageUrls();
+
+                
+
+                clockInterval = setInterval(updateClock, 1000);
+
+                setInterval(checkDateChange, 60000);
+
+
+
+                changeSlide();
+
+            }
+
+
+
+            // --- Initial Application Start ---
+
+            startApp();
+
+        });
+
+    </script>
+
+</body>
+
+</html>
